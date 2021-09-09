@@ -3,14 +3,14 @@ from fastapi import APIRouter, Query
 
 router = APIRouter()
 
-@router.get("/marketplace")
+@router.get("/")
 async def get_marketplace_data(
-    skin = Query(None),
+    item = Query(None),
     interval = Query(None)
 ):
 
     fields = {
-        'skin': skin,
+        'item': item,
         'interval': interval
     }
 
