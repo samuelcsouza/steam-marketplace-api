@@ -1,6 +1,9 @@
 import re
 from bs4 import BeautifulSoup
 import requests
+from datetime import datetime
+import pandas as pd
+import numpy as np
 
 
 class SteamService:
@@ -59,8 +62,7 @@ class SteamService:
         data = pattern.search(str(soup.getText)).groups()[1]
         data = data[2:len(data)-2].split(sep="],[")
 
-        # Auxiliar variable
-        final_data = []
+        all_data = []
 
         for sale in data:
             # Split data
@@ -68,17 +70,43 @@ class SteamService:
 
             # Make date format
             month, day, year, hour, utc = date.split(' ')
+
             date = day + '-' + month.replace('"', "") + '-' + year
-            utc = utc.replace('"', "")
+            date = datetime.strptime(date, "%d-%b-%Y").date()
 
             sales_data = {
                 'date': date,
-                'hour': hour + "00",
-                'utc': utc,
-                'value_dollar': value,
-                'count': count.replace('"', "")
+                'value': value,
             }
 
-            final_data.append(sales_data)
+            all_data.append(sales_data)
 
-        return final_data
+        steam_dataframe = pd.DataFrame(all_data)
+        steam_dataframe = steam_dataframe[[
+            "date", "value"]].sort_values(by="date")
+
+        start = steam_dataframe.date[0]
+        end = steam_dataframe.date[len(steam_dataframe.date) - 1]
+
+        new_dataframe = pd.DataFrame({
+            "date": pd.period_range(start, end, freq="D")
+        })
+
+        new_dataframe["date"] = new_dataframe["date"].astype("str")
+
+        steam_dataframe["date"] = steam_dataframe["date"].astype("str")
+
+        skin_dataframe = pd.merge(
+            new_dataframe, steam_dataframe, on="date", how="outer")
+
+        skin_dataframe["value"] = skin_dataframe["value"].astype("float64")
+        skin_dataframe["date"] = skin_dataframe["date"].astype("str")
+
+        skin_dataframe = skin_dataframe.groupby(
+            by="date", as_index=False).aggregate(np.mean)
+
+        skin_dataframe = skin_dataframe.fillna(method="ffill")
+
+        skin_dataframe["value"] = skin_dataframe["value"].round(2)
+
+        return skin_dataframe.to_dict("records")
