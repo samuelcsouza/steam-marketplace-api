@@ -23,7 +23,11 @@ docker-compose up --build
 ### Example
 
 ```bash
-curl http://0.0.0.0:8002/marketplace/?item=AK-47 | Safari Mesh (Factory New)
+wget --no-check-certificate --quiet \
+  --method GET \
+  --timeout=0 \
+  --header '' \
+   'http://0.0.0.0:8002/marketplace/?item=AK-47 | Safari Mesh (Factory New)'
 ```
 
 The endpoint receive one param:
