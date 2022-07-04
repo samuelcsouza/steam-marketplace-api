@@ -44,8 +44,23 @@ class SteamService:
             .replace("(", "%28")\
             .replace(")", "%29")
 
-        # Return URL
         return URL
+
+    def _make_date_format(self, date: str) -> str:
+        """
+        FORMAT DATE STRING TO YYYY-MM-DD PATTERN.
+
+        Param: date = A date on steam's format e.g `Nov 30 2011`
+
+        This function returns the date in the format `2011-11-30`
+        """
+
+        month, day, year = date.split(' ')
+
+        date = day + '-' + month.replace('"', "") + '-' + year
+        date = datetime.strptime(date, "%d-%b-%Y").date()
+
+        return date
 
     def get_item_marketplace_values(self, item: str) -> list:
 
