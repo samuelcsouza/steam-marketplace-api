@@ -62,8 +62,25 @@ class SteamService:
 
         return date
 
-    def get_item_marketplace_values(self, item: str) -> list:
+    def _get_steam_historical_values(self, item: str) -> list:
+        """ GET HISTORICAL VALUES FROM A STEAM'S ITEM.
 
+        Param: item = The name of the item (skin) you want.
+
+        The web crawler goes to the Steam's Marketplace and return a list
+        with the date and historical values (in Dollar) from the item.
+
+        Each element of the list is a string that contains three elments split by comma e.g:
+            '"Nov 30 2013 01: +0",20.402,"1"'
+
+        Where:
+            - 1st: Date (Month, Day, Year, Hour and UTC)
+            - 2nd: Value (American Dollar by default)
+            - 3rd: Sold Amount at this price (Integer value)
+
+        """
+
+        # Steam endpoint
         URL = self._url_item(item=item)
 
         # Get the page
@@ -76,6 +93,12 @@ class SteamService:
         # Extract the pattern string
         data = pattern.search(str(soup.getText)).groups()[1]
         data = data[2:len(data)-2].split(sep="],[")
+
+        return data
+
+    def get_item_marketplace_values(self, item: str) -> list:
+
+        data = self._get_steam_historical_values(item=item)
 
         all_data = []
 
