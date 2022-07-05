@@ -165,6 +165,9 @@ class SteamService:
         steam_dataframe["value"] = steam_dataframe["value"].astype(float)
         steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
+        steam_dataframe = steam_dataframe.groupby(
+            by="date", as_index=False).aggregate(np.mean)
+
         if fill:
             # If param `fill` is True,
             # We build an auxiliary dataframe specifying a date range that
@@ -184,14 +187,7 @@ class SteamService:
             steam_dataframe = pd.merge(
                 new_dataframe, steam_dataframe, on="date", how="outer")
 
-            steam_dataframe = steam_dataframe.groupby(
-                by="date", as_index=False).aggregate(np.mean)
             steam_dataframe = steam_dataframe.fillna(method="ffill")
-
-        else:
-
-            steam_dataframe = steam_dataframe.groupby(
-                by="date", as_index=False).aggregate(np.mean)
 
         steam_dataframe["value"] = steam_dataframe["value"].round(2)
 
