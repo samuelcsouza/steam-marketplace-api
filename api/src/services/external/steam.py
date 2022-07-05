@@ -7,22 +7,46 @@ import numpy as np
 
 
 class SteamService:
+    """
+    This is a class for handle with Steam Marketplace data.
+
+    Those methods goes to steam's endpoint and get a time serie from an requested item.
+    """
 
     def __init__(self, steam_url_marketplace: str) -> None:
+        """
+        Constructor of SteamService class.
+
+        You need to provide an URL to steam's marketplace including your Steam Application ID.
+
+        All Steam Application IDs you can access here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
+
+        Parameters:
+            steam_url_marketplace: Base URL from Steam's marketplace
+
+        Example:
+            CS:GO only: https://steamcommunity.com/market/listings/730/
+        """
         self._steam_url_marketplace = steam_url_marketplace
 
     def _url_item(self, item: str) -> str:
-        """ GET URL FOR A STEAM ITEM.
+        """
+        Get URL for a Steam item.
 
-        Param: item = Full name of an item of CS:GO on steam community market.
-        Example: ★ StatTrak™ Flip Knife | Freehand (Factory New)
+        Parameters: 
+            item (str): Full name of an item of CS:GO on steam community market.
 
-        URL Format: https://steamcommunity.com/market/listings/730/ +
+        Example:
+            ★ StatTrak™ Flip Knife | Freehand (Factory New)
+
+        URL Format: 
+            https://steamcommunity.com/market/listings/730/ +
               StatTrak%E2%84%A2%20 (If it StatTrak) +
               Item Name (With character escape for URL) +
               WEAR
 
-        This function returns the full URL for a requested item.
+        Returns:
+            str: This function returns the full URL for a requested item.
         """
 
         # Base URL from CS:GO Items
@@ -48,11 +72,13 @@ class SteamService:
 
     def _make_date_format(self, date: str) -> str:
         """
-        FORMAT DATE STRING TO YYYY-MM-DD PATTERN.
+        Format date string to YYYY-MM-DD pattern.
 
-        Param: date = A date on steam's format e.g `Nov 30 2011`
+        Parameters:
+            date (str): A date on steam's format e.g `Nov 30 2011`
 
-        This function returns the date in the format `2011-11-30`
+        Returns:
+            This function returns the date in the format `2011-11-30`
         """
 
         month, day, year = date.split(' ')
@@ -63,9 +89,8 @@ class SteamService:
         return date
 
     def _get_steam_historical_values(self, item: str) -> list:
-        """ GET HISTORICAL VALUES FROM A STEAM'S ITEM.
-
-        Param: item = The name of the item (skin) you want.
+        """ 
+        Get historical values from a Steam's item.
 
         The web crawler goes to the Steam's Marketplace and return a list
         with the date and historical values (in Dollar) from the item.
@@ -78,6 +103,11 @@ class SteamService:
             - 2nd: Value (American Dollar by default)
             - 3rd: Sold Amount at this price (Integer value)
 
+        Parameters: 
+            item (str): The name of the item (skin) you want.
+
+        Returns:
+            list: A list with all historical sell of requested item on Steam's Marketplace.
         """
 
         # Steam endpoint
@@ -97,7 +127,21 @@ class SteamService:
         return data
 
     def get_item_marketplace_values(self, item: str, fill: bool = True) -> list:
+        """
+        Get a time series from a requested item.
 
+        Parameters:
+            item (str): The full name of requested item (Includes special characters).
+            fill (bool): If True, fill values with the last observation (Default is True).
+
+        Examples:
+            item="AK-47 | Safari Mesh (Factory New)"
+            item="★ StatTrak™ Flip Knife | Freehand (Factory New)"
+
+        Returns:
+            list: A list (json) with the date and value of sell.
+
+        """
         # Array with item data
         data = str(self._get_steam_historical_values(item=item))
 
@@ -117,11 +161,16 @@ class SteamService:
                 lambda date: self._make_date_format(date))
         )
 
+        # Changing type of columns
         steam_dataframe["value"] = steam_dataframe["value"].astype(float)
         steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
         if fill:
-            # Auxiliary dataframe to fill missing values
+            # If param `fill` is True,
+            # We build an auxiliary dataframe specifying a date range that
+            # takes into account the lowest and hightest values of dates
+            # coming from Steam.
+
             start = steam_dataframe.date[0]
             end = steam_dataframe.date[len(steam_dataframe.date) - 1]
 
