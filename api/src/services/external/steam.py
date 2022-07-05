@@ -62,7 +62,7 @@ class SteamService:
 
         return date
 
-    def _get_steam_historical_values(self, item: str) -> list:
+    def _get_steam_historical_values(self, item: str) -> str:
         """ GET HISTORICAL VALUES FROM A STEAM'S ITEM.
 
         Param: item = The name of the item (skin) you want.
@@ -98,31 +98,26 @@ class SteamService:
 
     def get_item_marketplace_values(self, item: str) -> list:
 
-        data = self._get_steam_historical_values(item=item)
+        # Array with item data
+        data = str(self._get_steam_historical_values(item=item))
 
-        all_data = []
+        # Extract `date` and `value` from array (converted to string)
+        item_dates = re.compile(r"[a-zA-Z]+ \d+ \d+").findall(data)
+        item_values = re.compile(r"\d+\.\d+").findall(data)
 
-        for sale in data:
-            # Split data
-            date, value, count = sale.split(',')
+        # Build a pandas dataframe
+        steam_dataframe = pd.DataFrame(
+            list(zip(item_dates, item_values)),
+            columns=["date", "value"]
+        )
 
-            # Make date format
-            month, day, year, hour, utc = date.split(' ')
+        # Standard date format
+        steam_dataframe = steam_dataframe.assign(
+            date=lambda dataframe: dataframe["date"].map(
+                lambda date: self._make_date_format(date))
+        )
 
-            date = day + '-' + month.replace('"', "") + '-' + year
-            date = datetime.strptime(date, "%d-%b-%Y").date()
-
-            sales_data = {
-                'date': date,
-                'value': value,
-            }
-
-            all_data.append(sales_data)
-
-        steam_dataframe = pd.DataFrame(all_data)
-        steam_dataframe = steam_dataframe[[
-            "date", "value"]].sort_values(by="date")
-
+        # Auxiliary dataframe to fill missing values
         start = steam_dataframe.date[0]
         end = steam_dataframe.date[len(steam_dataframe.date) - 1]
 
@@ -131,7 +126,6 @@ class SteamService:
         })
 
         new_dataframe["date"] = new_dataframe["date"].astype("str")
-
         steam_dataframe["date"] = steam_dataframe["date"].astype("str")
 
         skin_dataframe = pd.merge(
