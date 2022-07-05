@@ -62,7 +62,7 @@ class SteamService:
 
         return date
 
-    def _get_steam_historical_values(self, item: str) -> str:
+    def _get_steam_historical_values(self, item: str) -> list:
         """ GET HISTORICAL VALUES FROM A STEAM'S ITEM.
 
         Param: item = The name of the item (skin) you want.
@@ -96,7 +96,7 @@ class SteamService:
 
         return data
 
-    def get_item_marketplace_values(self, item: str) -> list:
+    def get_item_marketplace_values(self, item: str, fill: bool = True) -> list:
 
         # Array with item data
         data = str(self._get_steam_historical_values(item=item))
@@ -117,28 +117,33 @@ class SteamService:
                 lambda date: self._make_date_format(date))
         )
 
-        # Auxiliary dataframe to fill missing values
-        start = steam_dataframe.date[0]
-        end = steam_dataframe.date[len(steam_dataframe.date) - 1]
+        steam_dataframe["value"] = steam_dataframe["value"].astype(float)
+        steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
-        new_dataframe = pd.DataFrame({
-            "date": pd.period_range(start, end, freq="D")
-        })
+        if fill:
+            # Auxiliary dataframe to fill missing values
+            start = steam_dataframe.date[0]
+            end = steam_dataframe.date[len(steam_dataframe.date) - 1]
 
-        new_dataframe["date"] = new_dataframe["date"].astype("str")
-        steam_dataframe["date"] = steam_dataframe["date"].astype("str")
+            new_dataframe = pd.DataFrame({
+                "date": pd.period_range(start, end, freq="D")
+            })
 
-        skin_dataframe = pd.merge(
-            new_dataframe, steam_dataframe, on="date", how="outer")
+            new_dataframe["date"] = new_dataframe["date"].astype(str)
+            steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
-        skin_dataframe["value"] = skin_dataframe["value"].astype("float64")
-        skin_dataframe["date"] = skin_dataframe["date"].astype("str")
+            steam_dataframe = pd.merge(
+                new_dataframe, steam_dataframe, on="date", how="outer")
 
-        skin_dataframe = skin_dataframe.groupby(
-            by="date", as_index=False).aggregate(np.mean)
+            steam_dataframe = steam_dataframe.groupby(
+                by="date", as_index=False).aggregate(np.mean)
+            steam_dataframe = steam_dataframe.fillna(method="ffill")
 
-        skin_dataframe = skin_dataframe.fillna(method="ffill")
+        else:
 
-        skin_dataframe["value"] = skin_dataframe["value"].round(2)
+            steam_dataframe = steam_dataframe.groupby(
+                by="date", as_index=False).aggregate(np.mean)
 
-        return skin_dataframe.to_dict("records")
+        steam_dataframe["value"] = steam_dataframe["value"].round(2)
+
+        return steam_dataframe.to_dict("records")

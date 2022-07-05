@@ -10,11 +10,12 @@ steam_service = SteamService(
 
 @router.get("/")
 async def get_marketplace_data(
-    item=Query(None)
+    item: str = Query(None),
+    fill: bool = Query(True)
 ):
 
     try:
-        result = steam_service.get_item_marketplace_values(item)
+        result = steam_service.get_item_marketplace_values(item, fill)
     except Exception as exc:
         raise HTTPException(
             status_code=400,
