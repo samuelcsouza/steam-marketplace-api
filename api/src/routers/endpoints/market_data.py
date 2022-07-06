@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Query, HTTPException
 from src.services.external.steam import SteamService
+from src.config.settings import get_settings
 
 router = APIRouter()
+settings = get_settings()
 
 steam_service = SteamService(
-    steam_url_marketplace="https://steamcommunity.com/market/listings/730/"
+    steam_url_marketplace=settings.STEAM_MARKETPLACE_CSGO_URL
 )
 
 
