@@ -1,9 +1,11 @@
 import re
 from bs4 import BeautifulSoup
+from fastapi import HTTPException
 import requests
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from src.utils.api_errors import ErrorInvalidParameters, ErrorResourceNotFound, raise_error_response
 
 
 class SteamService:
@@ -51,6 +53,9 @@ class SteamService:
 
         # Base URL from CS:GO Items
         URL = self._steam_url_marketplace
+
+        if not item:
+            raise ErrorInvalidParameters
 
         # Escape from html
         if "★" in item:
@@ -121,8 +126,11 @@ class SteamService:
         pattern = re.compile(r"(line1)\=([^)]+)\;")
 
         # Extract the pattern string
-        data = pattern.search(str(soup.getText)).groups()[1]
-        data = data[2:len(data)-2].split(sep="],[")
+        try:
+            data = pattern.search(str(soup.getText)).groups()[1]
+            data = data[2:len(data)-2].split(sep="],[")
+        except Exception as e:
+            raise_error_response(error=ErrorResourceNotFound)
 
         return data
 
