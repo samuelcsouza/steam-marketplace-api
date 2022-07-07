@@ -16,12 +16,6 @@ async def get_marketplace_data(
     fill: bool = Query(True)
 ):
 
-    try:
-        result = steam_service.get_item_marketplace_values(item, fill)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=str(exc)
-        )
+    result = steam_service.get_item_marketplace_values(item, fill)
 
     return result
