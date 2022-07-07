@@ -10,6 +10,9 @@ app = FastAPI()
 
 @app.exception_handler(HTTPException)
 async def api_exception_handler(request: Request, exception: HTTPException) -> JSONResponse:
+    """
+    Handle with API's exceptions and internal errors.
+    """
 
     error_status_code, error_detail = exception.status_code, exception.detail
 
@@ -27,6 +30,10 @@ async def api_exception_handler(request: Request, exception: HTTPException) -> J
 
 @app.exception_handler(api_errors.BusinessException)
 async def business_exception_handler(request: Request, exception: api_errors.BusinessException) -> JSONResponse:
+    """
+    Handle with business rule exceptions.
+    """
+
     try:
         api_errors.raise_error_response(exception, str(exception) or None)
     except HTTPException as e:
