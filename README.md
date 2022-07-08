@@ -6,25 +6,38 @@ _<p align="center"> An unofficial API to get data from the Steam Marketplace </p
 
 ## Run API
 
+### Via Terminal
+
 ```bash
 cd api/
 
-uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8002
 ```
 
-You can access the endpoint via GET request:
+### Via docker-compose
 
 ```bash
-curl http://127.0.0.1:8000/marketplace/
+docker-compose up --build
 ```
 
-The endpoint can receive two params:
+### Example
+
+```bash
+wget --no-check-certificate --quiet \
+  --method GET \
+  --timeout=0 \
+  --header '' \
+   'http://0.0.0.0:8002/marketplace/?item=AK-47 | Safari Mesh (Factory New)'
+```
+
+The endpoint receive one param:
 
 1. _item_: Represents the item you want to know the price;
-1. _interval_: Sets the interval for the request. Can it be **week**, **month** or **lifetime**. If not been specified, the return be **lifetime**.
 
-## Example
+## References
 
-```bash
-curl http://127.0.0.1:8000/marketplace?item=AWP | Asiimov&interval=lifetime
-```
+- [https://steamapi.xpaw.me/](https://steamapi.xpaw.me/)
+- [https://steamcommunity.com/dev](https://steamcommunity.com/dev)
+- [https://developer.valvesoftware.com/wiki/Steam_Web_API](https://developer.valvesoftware.com/wiki/Steam_Web_API)
+- [https://partner.steamgames.com/doc/webapi_overview](https://partner.steamgames.com/doc/webapi_overview)
+- [https://developer.valvesoftware.com/wiki/Steam_Application_IDs](https://developer.valvesoftware.com/wiki/Steam_Application_IDs)
