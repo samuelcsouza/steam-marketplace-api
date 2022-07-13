@@ -1,37 +1,50 @@
-## Welcome to GitHub Pages
+## Steam Marketplace API
 
-You can use the [editor on GitHub](https://github.com/samuelcsouza/steam-marketplace-api/edit/generic-games/docs/index.md) to maintain and preview the content for your website in Markdown files.
+<p align="center"> <img src="https://imgur.com/9SCUZGV.png" alt="Chicken Strike!"/> </p>
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+An unofficial API to get data from the Steam Marketplace.
 
-### Markdown
+### Installing and Run
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+You can get a time series from any item of steam marketplace with this API.
 
-```markdown
-Syntax highlighted code block
+To run locally, go to [Github Repository](https://github.com/samuelcsouza/steam-marketplace-api), clone it and run via uvicorn.
 
-# Header 1
-## Header 2
-### Header 3
+```bash
+# Clone Repo
+git clone https://github.com/samuelcsouza/steam-marketplace-api.git
 
-- Bulleted
-- List
+# Create a Virtual Env (Optional)
+virtualenv venv -p python3
+source venv/bin/activate
 
-1. Numbered
-2. List
+# Install dependencies
+pip3 install -r api/requirements.txt
 
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+# Run API
+cd api/
+uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8002
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+The API will be avaiable on port 8002 in your localhost [http://0.0.0.0:8002](http://0.0.0.0:8002)
 
-### Jekyll Themes
+### Usage
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/samuelcsouza/steam-marketplace-api/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+You can access the swagger documentation via [/docs](http://0.0.0.0:8002/docs) endpoint.
 
-### Support or Contact
+The endpoint [/marketplace](http://0.0.0.0:8002/marketplace) give a time series from an item what do you want. However, you need to provide an **application ID** in this route. The **application ID** refers to a game Id into Steam Platform, and a full list you can found [here](https://developer.valvesoftware.com/wiki/Steam_Application_IDs).
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+The parameters are:
+
+- **[str] item**: A full name of item on Steam's Marketplace;
+- **[bool] fill _(opitional)_**: Fill missing values?
+
+#### Examples
+
+- **CS:GO**: `http://0.0.0.0:8002/marketplace/730/?item=AK-47 | Safari Mesh (Factory New)&fill=true`
+- **Team Fortress 2**: `http://0.0.0.0:8002/marketplace/440/?item=Mann Co. Supply Crate Key&fill=true`
+- **Dota 2**: `http://0.0.0.0:8002/marketplace/570/?item=Magus Apex&fill=true`
+
+Feel free to open a Pull Request or Fork this!
+
+made with :blue_heart:
