@@ -22,17 +22,18 @@ docker-compose up --build
 
 ### Example
 
+The route needs to **appid** where it is Steam Game ID. All IDs list can find here: [Steam Application IDs](https://developer.valvesoftware.com/wiki/Steam_Application_IDs)
+
 ```bash
-wget --no-check-certificate --quiet \
+wget --no-check-certificate \
   --method GET \
-  --timeout=0 \
-  --header '' \
-   'http://0.0.0.0:8002/marketplace/?item=AK-47 | Safari Mesh (Factory New)'
+   'http://0.0.0.0:8002/marketplace/730/?item=AK-47 | Safari Mesh (Factory New)&fill=true'
 ```
 
-The endpoint receive one param:
+The endpoint receive two parameters:
 
 1. _item_: Represents the item you want to know the price;
+1. _fill (optional)_: Fill values with the last observation. _Default is true_.
 
 ## References
 
