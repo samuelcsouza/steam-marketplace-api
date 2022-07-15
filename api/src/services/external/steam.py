@@ -1,6 +1,5 @@
 import re
 from bs4 import BeautifulSoup
-from fastapi import HTTPException
 import requests
 from datetime import datetime
 import pandas as pd
@@ -31,15 +30,20 @@ class SteamService:
         """
         self._steam_url_marketplace = steam_url_marketplace
 
-    def _url_item(self, item: str) -> str:
+    def _url_item(self, appid: int, item: str) -> str:
         """
         Get URL for a Steam item.
 
-        Parameters: 
-            item (str): Full name of an item of CS:GO on steam community market.
+        Parameters:
+            appid (int): App game id on steam.
+            item (str): Full name of any item on steam community market.
 
         Example:
-            ★ StatTrak™ Flip Knife | Freehand (Factory New)
+            appid = 730
+            item = ★ StatTrak™ Flip Knife | Freehand (Factory New)
+
+        Notes:
+        - You can find all Ids here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
 
         URL Format: 
             https://steamcommunity.com/market/listings/730/ +
@@ -52,7 +56,7 @@ class SteamService:
         """
 
         # Base URL from CS:GO Items
-        URL = self._steam_url_marketplace
+        URL = self._steam_url_marketplace + f"/{appid}/"
 
         if not item:
             raise ErrorInvalidParameters
@@ -93,7 +97,7 @@ class SteamService:
 
         return date
 
-    def _get_steam_historical_values(self, item: str) -> list:
+    def _get_steam_historical_values(self, appid: int, item: str) -> list:
         """ 
         Get historical values from a Steam's item.
 
@@ -108,15 +112,19 @@ class SteamService:
             - 2nd: Value (American Dollar by default)
             - 3rd: Sold Amount at this price (Integer value)
 
-        Parameters: 
-            item (str): The name of the item (skin) you want.
+        Parameters:
+            appid (int): App game id on steam.
+            item (str): The name of the item you want.
+
+        Notes:
+        - You can find all Ids here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
 
         Returns:
             list: A list with all historical sell of requested item on Steam's Marketplace.
         """
 
         # Steam endpoint
-        URL = self._url_item(item=item)
+        URL = self._url_item(appid=appid, item=item)
 
         # Get the page
         html_page = requests.get(url=URL).text
@@ -134,24 +142,36 @@ class SteamService:
 
         return data
 
-    def get_item_marketplace_values(self, item: str, fill: bool = True) -> list:
+    def get_item_marketplace_values(self, appid: int, item: str, fill: bool = True) -> list:
         """
         Get a time series from a requested item.
 
         Parameters:
+            appid (int): App game id on steam.
             item (str): The full name of requested item (Includes special characters).
             fill (bool): If True, fill values with the last observation (Default is True).
 
         Examples:
+            appid=730
             item="AK-47 | Safari Mesh (Factory New)"
-            item="★ StatTrak™ Flip Knife | Freehand (Factory New)"
+
+            appid=440
+            item="Mann Co. Supply Crate Key"
+
+        Notes:
+        - You can find all Ids here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
 
         Returns:
             list: A list (json) with the date and value of sell.
 
         """
+        if appid < 0:
+            raise ErrorInvalidParameters(
+                "parameter `appid` must be greater than zero!"
+            )
+
         # Array with item data
-        data = str(self._get_steam_historical_values(item=item))
+        data = str(self._get_steam_historical_values(appid=appid, item=item))
 
         # Extract `date` and `value` from array (converted to string)
         item_dates = re.compile(r"[a-zA-Z]+ \d+ \d+").findall(data)
