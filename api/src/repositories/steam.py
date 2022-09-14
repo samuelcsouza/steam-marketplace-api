@@ -4,10 +4,14 @@ import requests
 from datetime import datetime
 import pandas as pd
 import numpy as np
-from src.utils.api_errors import ErrorInvalidParameters, ErrorResourceNotFound, raise_error_response
+from src.utils.api_errors import (
+    ErrorInvalidParameters,
+    ErrorResourceNotFound,
+    raise_error_response
+)
 
 
-class SteamService:
+class SteamRepository():
     """
     This is a class for handle with Steam Marketplace data.
 
@@ -30,7 +34,7 @@ class SteamService:
         """
         self._steam_url_marketplace = steam_url_marketplace
 
-    def _url_item(self, appid: int, item: str) -> str:
+    def _get_url_item(self, appid: int, item: str) -> str:
         """
         Get URL for a Steam item.
 
@@ -55,20 +59,17 @@ class SteamService:
             str: This function returns the full URL for a requested item.
         """
 
-        # Base URL from CS:GO Items
         URL = self._steam_url_marketplace + f"/{appid}/"
 
         if not item:
             raise ErrorInvalidParameters
 
-        # Escape from html
         if "★" in item:
             URL += "%E2%98%85%20"
 
         if "StatTrak™" in item:
             URL += "StatTrak%E2%84%A2%20"
 
-        # Final URL for item
         URL += item\
             .replace("★ ", "")\
             .replace("StatTrak™ ", "")\
@@ -79,7 +80,7 @@ class SteamService:
 
         return URL
 
-    def _make_date_format(self, date: str) -> str:
+    def _format_date(self, date: str) -> str:
         """
         Format date string to YYYY-MM-DD pattern.
 
@@ -92,12 +93,12 @@ class SteamService:
 
         month, day, year = date.split(' ')
 
-        date = day + '-' + month.replace('"', "") + '-' + year
-        date = datetime.strptime(date, "%d-%b-%Y").date()
+        new_date = day + '-' + month.replace('"', "") + '-' + year
+        new_date = datetime.strptime(new_date, "%d-%b-%Y").date()
 
-        return date
+        return new_date
 
-    def _get_steam_historical_values(self, appid: int, item: str) -> list:
+    def get_observations(self, appid: int, item: str, fill: bool = True) -> pd.DataFrame:
         """ 
         Get historical values from a Steam's item.
 
@@ -115,82 +116,44 @@ class SteamService:
         Parameters:
             appid (int): App game id on steam.
             item (str): The name of the item you want.
+            fill (bool): Fill missing values with the last observation?
 
         Notes:
         - You can find all Ids here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
 
         Returns:
-            list: A list with all historical sell of requested item on Steam's Marketplace.
+            DataFrame: A DataFrame with all historical sell of requested item on Steam's Marketplace.
         """
 
-        # Steam endpoint
-        URL = self._url_item(appid=appid, item=item)
+        URL = self._get_url_item(appid=appid, item=item)
 
-        # Get the page
         html_page = requests.get(url=URL).text
         soup = BeautifulSoup(html_page, "html.parser")
 
-        # Pattern to extract values
         pattern = re.compile(r"(line1)\=([^)]+)\;")
 
-        # Extract the pattern string
         try:
             data = pattern.search(str(soup.getText)).groups()[1]
             data = data[2:len(data)-2].split(sep="],[")
+            data = str(data)
         except Exception as e:
             raise_error_response(error=ErrorResourceNotFound)
 
-        return data
+        date_list = re.compile(r"[a-zA-Z]+ \d+ \d+").findall(data)
+        value_list = re.compile(r"\d+\.\d+").findall(data)
 
-    def get_item_marketplace_values(self, appid: int, item: str, fill: bool = True) -> list:
-        """
-        Get a time series from a requested item.
-
-        Parameters:
-            appid (int): App game id on steam.
-            item (str): The full name of requested item (Includes special characters).
-            fill (bool): If True, fill values with the last observation (Default is True).
-
-        Examples:
-            appid=730
-            item="AK-47 | Safari Mesh (Factory New)"
-
-            appid=440
-            item="Mann Co. Supply Crate Key"
-
-        Notes:
-        - You can find all Ids here: https://developer.valvesoftware.com/wiki/Steam_Application_IDs
-
-        Returns:
-            list: A list (json) with the date and value of sell.
-
-        """
-        if appid < 0:
-            raise ErrorInvalidParameters(
-                "parameter `appid` must be greater than zero!"
-            )
-
-        # Array with item data
-        data = str(self._get_steam_historical_values(appid=appid, item=item))
-
-        # Extract `date` and `value` from array (converted to string)
-        item_dates = re.compile(r"[a-zA-Z]+ \d+ \d+").findall(data)
-        item_values = re.compile(r"\d+\.\d+").findall(data)
-
-        # Build a pandas dataframe
         steam_dataframe = pd.DataFrame(
-            list(zip(item_dates, item_values)),
+            list(zip(date_list, value_list)),
             columns=["date", "value"]
         )
 
-        # Standard date format
         steam_dataframe = steam_dataframe.assign(
             date=lambda dataframe: dataframe["date"].map(
-                lambda date: self._make_date_format(date))
+                lambda date: self._format_date(date))
         )
 
-        # Changing type of columns
-        steam_dataframe["value"] = steam_dataframe["value"].astype(float)
+        steam_dataframe["value"] = steam_dataframe["value"].astype(
+            float).round(2)
         steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
         steam_dataframe = steam_dataframe.groupby(
@@ -213,10 +176,10 @@ class SteamService:
             steam_dataframe["date"] = steam_dataframe["date"].astype(str)
 
             steam_dataframe = pd.merge(
-                new_dataframe, steam_dataframe, on="date", how="outer")
+                new_dataframe, steam_dataframe,
+                on="date", how="outer"
+            )
 
             steam_dataframe = steam_dataframe.fillna(method="ffill")
 
-        steam_dataframe["value"] = steam_dataframe["value"].round(2)
-
-        return steam_dataframe.to_dict("records")
+        return steam_dataframe
