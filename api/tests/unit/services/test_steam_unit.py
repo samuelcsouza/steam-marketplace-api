@@ -1,14 +1,17 @@
 import pytest
+import pandas as pd
 from mock.mock import Mock
-from src.services.external.steam import SteamService
+from src.repositories.steam import SteamRepository
+from src.services.steam import SteamService
 
 
 class TestSteam:
     @classmethod
     def setup_class(cls):
         cls.steam_marketplace_url = "test-url.com"
+        cls.steam_repository = Mock()
         cls.steam_service = SteamService(
-            cls.steam_marketplace_url
+            cls.steam_repository
         )
 
     @pytest.mark.asyncio
@@ -16,23 +19,33 @@ class TestSteam:
         appid = 730
         item = "AK 47 | Safari Mesh (Factory New)"
 
-        item_values = [
-            '"Aug 17 2022 01: +0",4.09,"1"',  '"Aug 17 2022 02: +0",4.08,"2"',  '"Aug 17 2022 03: +0",4.231,"1"',
-            '"Aug 17 2022 04: +0",4.28,"2"',  '"Aug 17 2022 05: +0",4.07,"1"',  '"Aug 17 2022 08: +0",4.22,"1"',
-            '"Aug 17 2022 10: +0",4.472,"1"', '"Aug 17 2022 11: +0",4.415,"1"', '"Aug 17 2022 12: +0",25.38,"1"',
-            '"Aug 17 2022 13: +0",4.084,"1"', '"Aug 17 2022 14: +0",4.085,"2"', '"Aug 17 2022 15: +0",4.769,"2"',
-            '"Aug 17 2022 16: +0",4.389,"1"', '"Aug 17 2022 17: +0",4.4,"1"',   '"Aug 17 2022 18: +0",4.387,"1"',
-            '"Aug 17 2022 19: +0",4.46,"2"',  '"Aug 17 2022 20: +0",4.346,"2"', '"Aug 17 2022 21: +0",4.11,"1"'
-        ]
+        _return_value = pd.DataFrame(
+            {
+                "date": ["2016-07-10",
+                         "2016-07-11",
+                         "2016-07-12",
+                         "2016-07-13",
+                         "2016-07-14",
+                         "2016-07-15",
+                         "2016-07-16",
+                         "2016-07-17",
+                         "2016-07-18",
+                         "2016-07-19"],
+                "value": [10,
+                          20,
+                          30,
+                          40,
+                          50,
+                          60,
+                          70,
+                          80,
+                          90,
+                          100]
+            }
+        )
 
-        all_values = [4.09, 4.28, 4.472, 4.084, 4.389, 4.46,
-                      4.08, 4.07, 4.415, 4.085, 4.4, 4.346,
-                      4.231, 4.22, 25.38, 4.769, 4.387, 4.11]
-
-        mean_values = round(sum(all_values) / len(all_values), ndigits=2)
-
-        self.steam_service._get_steam_historical_values = Mock()
-        self.steam_service._get_steam_historical_values.return_value = item_values
+        self.steam_repository.get_observations = Mock()
+        self.steam_repository.get_observations.return_value = _return_value
 
         result = self.steam_service.get_item_marketplace_values(
             appid=appid,
@@ -42,10 +55,49 @@ class TestSteam:
 
         expected_data = [
             {
-                "date": "2022-08-17",
-                "value": mean_values
+                "date": "2016-07-10",
+                "value": 10
+            },
+            {
+                "date": "2016-07-11",
+                "value": 20
+            },
+            {
+                "date": "2016-07-12",
+                "value": 30
+            },
+            {
+                "date": "2016-07-13",
+                "value": 40
+            },
+            {
+                "date": "2016-07-14",
+                "value": 50
+            },
+            {
+                "date": "2016-07-15",
+                "value": 60
+            },
+            {
+                "date": "2016-07-16",
+                "value": 70
+            },
+            {
+                "date": "2016-07-17",
+                "value": 80
+            },
+            {
+                "date": "2016-07-18",
+                "value": 90
+            },
+            {
+                "date": "2016-07-19",
+                "value": 100
             }
         ]
 
         assert result[0]["date"] == expected_data[0]["date"]
         assert result[0]["value"] == expected_data[0]["value"]
+
+        assert result[-1]["date"] == expected_data[-1]["date"]
+        assert result[-1]["value"] == expected_data[-1]["value"]

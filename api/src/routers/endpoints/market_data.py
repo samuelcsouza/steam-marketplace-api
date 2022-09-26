@@ -1,20 +1,19 @@
-from fastapi import APIRouter, Query
-from src.services.external.steam import SteamService
+from fastapi import APIRouter, Query, Depends
+
+from src.dependencies import get_service
+from src.services.steam import SteamService
 from src.config.settings import get_settings
 
 router = APIRouter()
 settings = get_settings()
-
-steam_service = SteamService(
-    steam_url_marketplace=settings.STEAM_MARKETPLACE_URL
-)
 
 
 @router.get("/{appid}")
 async def get_marketplace_data(
     appid: int,
     item: str = Query(None),
-    fill: bool = Query(True)
+    fill: bool = Query(True),
+    steam_service=Depends(get_service(SteamService))
 ):
     result = steam_service.get_item_marketplace_values(appid, item, fill)
 
